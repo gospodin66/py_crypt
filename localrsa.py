@@ -19,20 +19,15 @@ class CryptError(Exception):
 
 
 class rsa_encrypter:
-    def __init__(self, 
-        user: str,
-        passphrase: str, 
-    ) -> None:
+    def __init__(self, user: str, passphrase: str) -> None:
         self._keysize = 2048
-        self._user = user
         self._keypair_path = '/'.join([
             os.path.dirname(os.path.realpath(__file__)),
             "RSA-keys",
-            self._user
+            user
         ])
         self._priv_path = '/'.join([ self._keypair_path, 'private.pem' ])
         self._pub_path = '/'.join([ self._keypair_path, 'public.pem' ])
-        self._encrypted_data_out = '_'.join([self._user, "encrypted_data.bin"])
 
         try:
             self.get_key(passphrase)
@@ -88,23 +83,35 @@ class rsa_encrypter:
         return 0
 
 
-    def encrypt(self, encrypted_data_path: str, data: bytes, mode: str='public') -> int:
+    def encrypt(self,
+        encrypted_data_path: str,
+        data: bytes,
+        mode: str='public'
+    ) -> bytes:
+        if mode == 'private':
+            encrypted_data = self.cipher_rsa_private.encrypt(data)
+        elif mode == 'public':
+            encrypted_data = self.cipher_rsa_public.encrypt(data)
+        else:
+            raise CryptError("Invalid RSA encryption mode")
+
         with open(encrypted_data_path, "wb") as f:
-            f.write(self.cipher_rsa_private.encrypt(data) if mode == 'private' \
-                else self.cipher_rsa_public.encrypt(data))
-        return 0
+            f.write(encrypted_data)
+
+        return encrypted_data
 
 
-    def decrypt(self, encrypted_data_path: str, mode: str='private') -> bytes:
-        decrypted_session_key = b''
-
+    def decrypt(self,
+        encrypted_data_path: str,
+        mode: str='private'
+    ) -> bytes:
+        decrypted_data = b''
         with open(encrypted_data_path, "rb") as file_out:
             if mode == 'private':
-                decrypted_session_key = self.cipher_rsa_private.decrypt(file_out.read())
+                decrypted_data = self.cipher_rsa_private.decrypt(file_out.read())
             else:
-                decrypted_session_key = self.cipher_rsa_public.decrypt(file_out.read())
-
-        return decrypted_session_key
+                decrypted_data = self.cipher_rsa_public.decrypt(file_out.read())
+        return decrypted_data
 
 
 if __name__ == '__main__':
