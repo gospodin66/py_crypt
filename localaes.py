@@ -9,6 +9,9 @@ from sys import argv
 # RUN:
 # python3 localaes.py {user} {data}
 
+from localrsa import rsa_encrypter;
+from getpass import getpass
+
 
 
 class CryptError(Exception):
@@ -17,7 +20,7 @@ class CryptError(Exception):
 
 
 class aes_encrypter:
-    def __init__(self, user: str, session_key: bytes = b'') -> None:
+    def __init__(self, user: str, session_key: bytes = b'', passphrase: str = '') -> None:
         self.encrypted_data_dir = '/'.join([
             os.path.dirname(__file__), 
             'ENCRYPTED-data', 
@@ -28,20 +31,25 @@ class aes_encrypter:
         ])
         self.keyring_path = '/'.join([
             self.keyring_dir_path,
-            "aes-keys.txt"
+            "AES-keyring.txt"
         ])
 
         if session_key:
             self.user, self.session_key = (user, session_key)
             print(f"using provided key: {self.session_key}")
         else:
-            self.user, self.session_key = self.get_key(user)
-            print(f"using default key: {self.session_key}")
+            if passphrase:
+                self.user, self.session_key = self.get_key_rsa(user, passphrase)
+                print(f"Using decrypted key: {self.session_key}")
+            else:
+                self.user, self.session_key = self.get_key(user)
+                print(f"Using default key: {self.session_key}")
 
         self.encrypted_user_data_path = '/'.join([
             self.encrypted_data_dir,
             f'{user}_encrypted_data.bin'
         ])
+        
         self.cipher_aes = AES.new(self.session_key, AES.MODE_GCM)
 
 
@@ -67,6 +75,46 @@ class aes_encrypter:
             f.write(':'.join([
                     user,
                     f'{base64.b64encode(_user_key).decode("utf-8")}\n'
+                ])
+            )
+        print(f"Key added to keyring")
+        return _user, _user_key
+
+
+    #
+    # read/append key to the list
+    #
+    def get_key_rsa(self, user: str, passphrase: str) -> tuple:
+
+        try:
+            if not os.path.isdir(self.keyring_dir_path):
+                print(f'Generating new directory {self.keyring_dir_path}')
+                os.makedirs(self.keyring_dir_path)
+        except CryptError as e:
+            raise CryptError(f"Error creating directory: {e.args[::-1]}")
+            
+        _user, _user_key = self.read_key_file(user)
+        if _user and _user_key:
+            print(f"User {_user} exists with key: {_user_key}")
+            crypt_rsa = rsa_encrypter(user, passphrase)
+            _user_key = crypt_rsa.decrypt(
+                encrypted_data_path='/'.join([os.path.dirname(__file__), 'ENCRYPTED-data', f'{user}_enc.bin']),
+                mode='private'
+            )
+            return _user, _user_key
+
+        _user, _user_key = (user, get_random_bytes(16))
+        crypt_rsa = rsa_encrypter(user, passphrase)
+        encrypted_aes_session_key = crypt_rsa.encrypt(
+            encrypted_data_path='/'.join([os.path.dirname(__file__), 'ENCRYPTED-data', f'{user}_enc.bin']),
+            data=_user_key,
+            mode='public'
+        )
+        print(f"User {_user} doesn't exist. Adding to keyring..")
+        with open(self.keyring_path, 'a') as f:
+            f.write(':'.join([
+                    user,
+                    f'{base64.b64encode(encrypted_aes_session_key).decode("utf-8")}\n'
                 ])
             )
         print(f"Key added to keyring")
@@ -139,8 +187,9 @@ if __name__ == '__main__':
 
     user = argv[1]
     data = argv[2].encode("utf-8")
+    passphrase = getpass('Enter passphrase: ')
 
-    crypt = aes_encrypter(user)
+    crypt = aes_encrypter(user=user, session_key=b'', passphrase=passphrase)
     encrypted = crypt.encrypt(data)
     decrypted = crypt.decrypt(encrypted)
 

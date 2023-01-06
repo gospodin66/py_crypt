@@ -62,7 +62,7 @@ if __name__ == '__main__':
         f'{user}_encrypted_data.bin'
     ])
     # init earlier => fetch key from file if exists
-    crypt_aes = aes_encrypter(user)
+    crypt_aes = aes_encrypter(user=user, session_key=b'', passphrase=passphrase)
     aes_session_key = crypt_aes.session_key
     # create RSA keypair in constructor -- encrypt AES session_key
     crypt_rsa = rsa_encrypter(user, passphrase)
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         encrypted_data_path=encrypted_key_path,
         mode='private'
     )
-    crypt_aes_later = aes_encrypter(user)
+    crypt_aes_later = aes_encrypter(user=user, session_key=b'', passphrase=passphrase)
     # encrypt initial data with AES key
     # nonce, tag & ciphertext could also be read from a file
     nonce, tag, ciphertext = crypt_aes_later.encrypt(data)

@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     print(f">>> RSA decrypted AES key: {decrypted_aes_session_key}")
 
-    crypt_aes_later = aes_encrypter(user, decrypted_aes_session_key)
+    crypt_aes_later = aes_encrypter(user=user, session_key=decrypted_aes_session_key)
     # encrypt initial data with AES key
     # nonce, tag & ciphertext could also be read from a file
     nonce, tag, ciphertext = crypt_aes_later.encrypt(data.encode('utf-8'))

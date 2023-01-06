@@ -24,13 +24,9 @@ if __name__ == '__main__':
         'ENCRYPTED-data', 
     ])
     
-    try:
-        if not os.path.isdir(encrypted_data_dir):
-            print(f'Generating new directory {encrypted_data_dir}')
-            os.makedirs(encrypted_data_dir)
-    except CryptError as e:
-        raise CryptError(f"Error creating directory: {e.args[::-1]}")
-
+    if not os.path.isdir(encrypted_data_dir):
+        print(f'Generating new directory {encrypted_data_dir}')
+        os.makedirs(encrypted_data_dir)
 
     user = argv[1]
 
@@ -44,7 +40,7 @@ if __name__ == '__main__':
         f'{user}_encrypted_data.bin'
     ])
     # init earlier => fetch key from file if exists
-    crypt_aes = aes_encrypter(user)
+    crypt_aes = aes_encrypter(user=user, session_key=b'', passphrase=passphrase)
     aes_session_key = crypt_aes.session_key
     # create RSA keypair in constructor -- encrypt AES session_key
     crypt_rsa = rsa_encrypter(user, passphrase)
