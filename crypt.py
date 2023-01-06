@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 from Crypto.Random import get_random_bytes
 from getpass import getpass
@@ -41,7 +42,17 @@ if __name__ == '__main__':
 
 
     user = argv[1]
-    data = argv[2].encode("utf-8")
+    data_path = argv[2]
+
+    if os.path.exists(data_path) and os.path.isfile(data_path):
+        print(f'Provided arg [{os.path.abspath(data_path)}] is a file -- reading from file')
+        file_data = b''
+        with open(data_path, 'rb') as f:
+            file_data += f.read()
+        data = file_data
+    else:
+        data = data_path.encode("utf-8")
+
     passphrase = getpass('Enter passphrase: ')
     encrypted_data_path = '/'.join([
         encrypted_data_dir,
@@ -77,5 +88,27 @@ if __name__ == '__main__':
     nonce, tag, ciphertext = crypt_aes_later.encrypt(data)
     decrypted = crypt_aes_later.decrypt((nonce, tag, ciphertext))
 
+    if os.path.exists(data_path) and os.path.isfile(data_path):
 
-    print(f">>> result: {decrypted.decode()}\r\n")
+        mime_type = subprocess.check_output(['file', '-b', '--mime', os.path.abspath(data_path)]).decode('utf-8').split(';')[0]
+
+        print(f"\r\nDEBUG: mime-type: {mime_type}\r\n")
+
+        # TODO: more mimetypes, better mime implementation
+        if mime_type == 'image/jpeg' \
+        or mime_type == 'image/jpg' \
+        or mime_type == 'image/png' \
+        or mime_type == 'image/gif':
+            mime = mime_type.split('/')[1]
+
+
+        file_out_path = '/'.join([
+            os.path.dirname(os.path.abspath(data_path)),
+            f'{user}_decrypted_data.{mime}'
+        ])
+        print(f'Decrypted file: [{file_out_path}]')
+        with open(file_out_path, 'wb') as f:
+            f.write(decrypted)
+
+    else:
+        print(f">>> result: {decrypted}\r\n")
