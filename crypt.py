@@ -15,7 +15,7 @@ from localaes import aes_encrypter;
 # AES encrypter encrypts direct value
 
 # RUN:
-# python3 localaes.py "ljkrazesci" "pravi rklja" "`pwd`/RSA-keys/ljkrazesci_encrypted_data.bin"
+# python3 crypt.py {user} {data}
 
 
 

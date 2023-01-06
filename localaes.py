@@ -7,7 +7,7 @@ from sys import argv
 # from datetime import datetime
 
 # RUN:
-# python3 localaes.py ljkra ljkra
+# python3 localaes.py {user} {data}
 
 
 

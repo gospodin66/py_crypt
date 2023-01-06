@@ -4,7 +4,4 @@ __pycache__/
 ENCRYPTED-data/
 AES-keys/
 RSA-keys/
-*.gif
-*.jpg
-*.jpeg
-*.png
+assets/

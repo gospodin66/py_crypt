@@ -8,8 +8,8 @@ from sys import argv
 
 # README:
 # Script invokes RSA encrypter which encrypts AES key.
-# Decrypted AES key is used to encrypt further messages of any len.
-# RUN: python3 crypt.py "exampleuser" "We attack at dawn.."
+# Decrypted AES key is used to encrypt further data of any len.
+# RUN: python3 localrsa.py {user} {data} {keypair_dir}
 
 
 class CryptError(Exception):
