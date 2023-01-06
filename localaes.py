@@ -1,65 +1,86 @@
+import base64
 import os
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
-from getpass import getpass
 from sys import argv
+# from datetime import datetime
+
+# RUN:
+# python3 localaes.py ljkra ljkra
+
 
 
 class CryptError(Exception):
     pass
 
 
+
 class aes_encrypter:
-    #
-    # pure AES encrypter (NO RSA)
-    #
-    def __init__(self, user: str, user_key: bytes = b'') -> None:
-        self._user_key = user_key if user_key else get_random_bytes(16)
-        self._keyring_dir_path = '/'.join([
+    def __init__(self, user: str) -> None:
+        self.encrypted_data_dir = '/'.join([
+            os.path.dirname(__file__), 
+            'ENCRYPTED-data', 
+        ])
+        self.keyring_dir_path = '/'.join([
             os.path.dirname(os.path.realpath(__file__)),
             "AES-keys",
         ])
-        self._keyring_path = '/'.join([ self._keyring_dir_path, "aes-keys.txt" ])
-        self._encrypted_data_out = '_'.join([user, "encrypted_data.bin"])
-        self.cipher_aes = AES.new(self._user_key, AES.MODE_EAX)
-        __user, __user_key = self.get_key(user, self._user_key)
-        if not (__user, __user_key):
-            raise CryptError("Error adding key to keyring.")
-        print(f"Key added to keyring")
+        self.keyring_path = '/'.join([
+            self.keyring_dir_path,
+            "aes-keys.txt"
+        ])
+
+        self.user, self.user_key = self.get_key(user)
+        
+        self.encrypted_user_data_path = '/'.join([
+            self.encrypted_data_dir,
+            f'{user}_encrypted_data.bin'
+        ])
+        self.cipher_aes = AES.new(self.user_key, AES.MODE_EAX)
 
 
     #
-    # append key to the list
+    # read/append key to the list
     #
-    def get_key(self, user: str, user_key: bytes) -> tuple:
-        encoding = 'utf-8'
-
+    def get_key(self, user: str) -> tuple:
         try:
-            if not os.path.isdir(self._keyring_dir_path):
-                print(f'Generating new directory {self._keyring_dir_path}')
-                os.makedirs(self._keyring_dir_path)
+            if not os.path.isdir(self.keyring_dir_path):
+                print(f'Generating new directory {self.keyring_dir_path}')
+                os.makedirs(self.keyring_dir_path)
         except CryptError as e:
             raise CryptError(f"Error creating directory: {e.args[::-1]}")
             
-        if os.path.exists(self._keyring_path):
-            with open(self._keyring_path, 'rb') as f:
-                line = f.read().decode()
-                _user = line.split(': ')[0].strip().encode(encoding)
-                _user_key = line.split(': ')[1].strip().encode(encoding)
-                if _user == user and _user_key == user_key:
-                    print(f"User {_user} exists with key: {_user_key}")
-                    return _user, _user_key
+        _user, _user_key = self.read_key_file(user)
+        if _user and _user_key:
+            print(f"User {_user} exists with key: {_user_key}")
+            return _user, _user_key
 
+        _user, _user_key = (user, get_random_bytes(16))
         print(f"User {_user} doesn't exist. Adding to keyring..")
-        _user = user.encode(encoding)
-        _user_key = user_key
-        with open(self._keyring_path, 'ab') as f:
-            f.write(f'{user}: {user_key}\n'.encode(encoding))
-
+        with open(self.keyring_path, 'a') as f:
+            f.write(':'.join([
+                    user,
+                    f'{base64.b64encode(_user_key).decode("utf-8")}\n'
+                ])
+            )
+        print(f"Key added to keyring")
         return _user, _user_key
 
 
+    #
+    #
+    #
+    def read_key_file(self, user: str) -> tuple:
+        if os.path.exists(self.keyring_path):
+            with open(self.keyring_path, 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    _user = line.split(':')[0]
+                    _user_key = line.split(':')[1]
+                    if user == _user:
+                        return _user, base64.b64decode(_user_key)
+        return None, None
     #
     # encrypts with public
     #
@@ -70,7 +91,7 @@ class aes_encrypter:
 
         ciphertext, tag = self.cipher_aes.encrypt_and_digest(data)
 
-        with open(self._encrypted_data_out, "wb") as file_out:
+        with open(self.encrypted_user_data_path, "wb") as file_out:
             [ file_out.write(x) for x in (self.cipher_aes.nonce, tag, ciphertext) ]
 
         print(
@@ -92,16 +113,17 @@ class aes_encrypter:
         ciphertext = encrypted[2]
 
         # create new aes cipher on the "other side" with same session_key
-        cipher = AES.new(self._user_key, AES.MODE_EAX, nonce)
+        cipher = AES.new(self.user_key, AES.MODE_EAX, nonce)
+        data = cipher.decrypt_and_verify(ciphertext, tag)
 
         print(
             f"DEBUG AES DECRYPT SESSION KEY:\r\n"\
             f"nonce: {str(nonce)}\r\n"\
             f"tag: {str(tag)}\r\n"\
-            f"ciphertext: {str(ciphertext)}\r\n"
+            f"ciphertext: {str(ciphertext)}\r\n"\
+            f"decrypted data: {data}\r\n"
         )
 
-        data = cipher.decrypt_and_verify(ciphertext, tag)
         return data
 
 

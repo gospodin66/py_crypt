@@ -1,3 +1,6 @@
 *.bin
 *keys/
 __pycache__/
+ENCRYPTED-data/
+AES-keys/
+RSA-keys/
