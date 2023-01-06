@@ -58,6 +58,7 @@ if __name__ == '__main__':
         data=aes_session_key,
         mode='public'
     )
+    print(f">>> encrypted result: {encrypted_aes_session_key}\r\n")
 
 
     # .

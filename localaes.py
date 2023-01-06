@@ -32,12 +32,12 @@ class aes_encrypter:
         ])
 
         self.user, self.user_key = self.get_key(user)
-        
+
         self.encrypted_user_data_path = '/'.join([
             self.encrypted_data_dir,
             f'{user}_encrypted_data.bin'
         ])
-        self.cipher_aes = AES.new(self.user_key, AES.MODE_EAX)
+        self.cipher_aes = AES.new(self.user_key, AES.MODE_GCM)
 
 
     #
@@ -113,7 +113,7 @@ class aes_encrypter:
         ciphertext = encrypted[2]
 
         # create new aes cipher on the "other side" with same session_key
-        cipher = AES.new(self.user_key, AES.MODE_EAX, nonce)
+        cipher = AES.new(self.user_key, AES.MODE_GCM, nonce)
         data = cipher.decrypt_and_verify(ciphertext, tag)
 
         print(
