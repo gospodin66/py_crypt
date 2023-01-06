@@ -1,7 +1,6 @@
 import os
 import subprocess
 
-from Crypto.Random import get_random_bytes
 from getpass import getpass
 from sys import argv
 from localrsa import rsa_encrypter;
@@ -15,7 +14,7 @@ from localaes import aes_encrypter;
 # AES encrypter encrypts direct value
 
 # RUN:
-# python3 crypt.py {user} {data}
+# python3 crypt.py {user} {data|file}
 
 
 
@@ -54,18 +53,21 @@ if __name__ == '__main__':
         data = data_path.encode("utf-8")
 
     passphrase = getpass('Enter passphrase: ')
+    encrypted_key_path = '/'.join([
+        encrypted_data_dir,
+        f'{user}_encrypted_key.bin'
+    ])
     encrypted_data_path = '/'.join([
         encrypted_data_dir,
         f'{user}_encrypted_data.bin'
     ])
-
     # init earlier => fetch key from file if exists
     crypt_aes = aes_encrypter(user)
-    aes_session_key = crypt_aes.user_key
+    aes_session_key = crypt_aes.session_key
     # create RSA keypair in constructor -- encrypt AES session_key
     crypt_rsa = rsa_encrypter(user, passphrase)
     encrypted_aes_session_key = crypt_rsa.encrypt(
-        encrypted_data_path=encrypted_data_path,
+        encrypted_data_path=encrypted_key_path,
         data=aes_session_key,
         mode='public'
     )
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     crypt_rsa_later = rsa_encrypter(user, passphrase)
     # decrypt and use AES session key for further communication
     decrypted_aes_session_key = crypt_rsa_later.decrypt(
-        encrypted_data_path=encrypted_data_path,
+        encrypted_data_path=encrypted_key_path,
         mode='private'
     )
     crypt_aes_later = aes_encrypter(user)

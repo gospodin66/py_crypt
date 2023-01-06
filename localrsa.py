@@ -87,6 +87,7 @@ class rsa_encrypter:
         data: bytes,
         mode: str='public'
     ) -> bytes:
+        encrypted_data = b''
         if mode == 'private':
             encrypted_data = self.cipher_rsa_private.encrypt(data)
         elif mode == 'public':
@@ -108,18 +109,21 @@ class rsa_encrypter:
         with open(encrypted_data_path, "rb") as file_out:
             if mode == 'private':
                 decrypted_data = self.cipher_rsa_private.decrypt(file_out.read())
-            else:
+            elif mode == 'public':
                 decrypted_data = self.cipher_rsa_public.decrypt(file_out.read())
+            else:
+                raise CryptError("Invalid RSA encryption mode")
+
         return decrypted_data
 
 
 if __name__ == '__main__':
     if len(argv) < 4:
-        raise CryptError("\nThis script accepts [user], [data] & [keypair_dir] args.")
+        raise CryptError("\nThis script accepts [user], [data] & [encrypted_binary_path] args.")
 
     user = argv[1]
     data = argv[2].encode("utf-8")
-    keypair_dir = argv[3]
+    encrypted_binary_path = argv[3]
 
     passphrase = getpass('Enter passphrase: ')
 
@@ -127,7 +131,7 @@ if __name__ == '__main__':
     mode_decrypt = "private"
 
     crypt = rsa_encrypter(user, passphrase)
-    crypt.encrypt(keypair_dir, data, mode_encrypt)
-    decrypted_data = crypt.decrypt(keypair_dir, mode_decrypt)
+    crypt.encrypt(encrypted_binary_path, data, mode_encrypt)
+    decrypted_data = crypt.decrypt(encrypted_binary_path, mode_decrypt)
 
     print(f">>> result: {decrypted_data}\r\n")

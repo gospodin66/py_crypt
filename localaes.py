@@ -17,7 +17,7 @@ class CryptError(Exception):
 
 
 class aes_encrypter:
-    def __init__(self, user: str) -> None:
+    def __init__(self, user: str, session_key: bytes = b'') -> None:
         self.encrypted_data_dir = '/'.join([
             os.path.dirname(__file__), 
             'ENCRYPTED-data', 
@@ -31,13 +31,18 @@ class aes_encrypter:
             "aes-keys.txt"
         ])
 
-        self.user, self.user_key = self.get_key(user)
+        if session_key:
+            self.user, self.session_key = (user, session_key)
+            print(f"using provided key: {self.session_key}")
+        else:
+            self.user, self.session_key = self.get_key(user)
+            print(f"using default key: {self.session_key}")
 
         self.encrypted_user_data_path = '/'.join([
             self.encrypted_data_dir,
             f'{user}_encrypted_data.bin'
         ])
-        self.cipher_aes = AES.new(self.user_key, AES.MODE_GCM)
+        self.cipher_aes = AES.new(self.session_key, AES.MODE_GCM)
 
 
     #
@@ -113,7 +118,7 @@ class aes_encrypter:
         ciphertext = encrypted[2]
 
         # create new aes cipher on the "other side" with same session_key
-        cipher = AES.new(self.user_key, AES.MODE_GCM, nonce)
+        cipher = AES.new(self.session_key, AES.MODE_GCM, nonce)
         data = cipher.decrypt_and_verify(ciphertext, tag)
 
         print(
