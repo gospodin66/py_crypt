@@ -1,11 +1,11 @@
 import os
 import subprocess
+import mimetypes
 
 from getpass import getpass
 from sys import argv
-from localrsa import rsa_encrypter;
-from localaes import aes_encrypter;
-
+from localrsa import rsa_encrypter
+from localaes import aes_encrypter
 
 # README:
 # Script invokes RSA encrypter which encrypts AES key.
@@ -21,6 +21,21 @@ from localaes import aes_encrypter;
 class CryptError(Exception):
     pass
 
+
+
+def get_ext_from_mime() -> str:
+    mime_type = subprocess.check_output([
+        'file',
+        '-b',
+        '--mime',
+        os.path.abspath(data_path)
+    ]).decode('utf-8').split(';')[0]
+    mimes = ( str(mt) for mt, fmt in mimetypes._types_map_default.items() if fmt == mime_type )
+    if not mimes:
+        raise CryptError(f"No mime type found {mimes} for {mime_type}")
+    f_extension = [ m for m in mimes if m[1:] == mime_type.split('/')[-1] ][0]
+    print(f"\r\nExtension found {f_extension} for mime-type: {mime_type}\r\n")
+    return f_extension
 
 
 if __name__ == '__main__':
@@ -52,7 +67,7 @@ if __name__ == '__main__':
     else:
         data = data_path.encode("utf-8")
 
-    passphrase = getpass('Enter passphrase: ')
+    passphrase = getpass(f'Enter passphrase for user {user}: ')
     encrypted_key_path = '/'.join([
         encrypted_data_dir,
         f'{user}_encrypted_key.bin'
@@ -92,21 +107,13 @@ if __name__ == '__main__':
 
     if os.path.exists(data_path) and os.path.isfile(data_path):
 
-        mime_type = subprocess.check_output(['file', '-b', '--mime', os.path.abspath(data_path)]).decode('utf-8').split(';')[0]
+        f_extension = get_ext_from_mime()
 
-        print(f"\r\nDEBUG: mime-type: {mime_type}\r\n")
-
-        # TODO: more mimetypes, better mime implementation
-        if mime_type == 'image/jpeg' \
-        or mime_type == 'image/jpg' \
-        or mime_type == 'image/png' \
-        or mime_type == 'image/gif':
-            mime = mime_type.split('/')[1]
-
+        print(f"Guessed file extension from mime type: {f_extension}")
 
         file_out_path = '/'.join([
             os.path.dirname(os.path.abspath(data_path)),
-            f'{user}_decrypted_data.{mime}'
+            f'{user}_decrypted_data{f_extension}'
         ])
         print(f'Decrypted file: [{file_out_path}]')
         with open(file_out_path, 'wb') as f:
@@ -114,3 +121,4 @@ if __name__ == '__main__':
 
     else:
         print(f">>> result: {decrypted}\r\n")
+

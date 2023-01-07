@@ -27,7 +27,7 @@ if __name__ == '__main__':
     user = argv[1]
     data = argv[2]
 
-    passphrase = getpass('Enter passphrase: ')
+    passphrase = getpass(f'Enter passphrase for user {user}: ')
     encrypted_data_path = '/'.join([
         encrypted_data_dir,
         f'{user}_encrypted_data.bin'

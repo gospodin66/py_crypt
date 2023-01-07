@@ -25,7 +25,7 @@ if __name__ == '__main__':
     ])
 
     user = argv[1]
-    passphrase = getpass('Enter passphrase: ')
+    passphrase = getpass(f'Enter passphrase for user {user}: ')
 
 
     encrypted_data_path = '/'.join([

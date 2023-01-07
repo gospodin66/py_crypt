@@ -125,7 +125,7 @@ if __name__ == '__main__':
     data = argv[2].encode("utf-8")
     encrypted_binary_path = argv[3]
 
-    passphrase = getpass('Enter passphrase: ')
+    passphrase = getpass(f'Enter passphrase for user {user}: ')
 
     mode_encrypt = "public"
     mode_decrypt = "private"

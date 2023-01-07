@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
     user = argv[1]
     data = argv[2].encode("utf-8")
-    passphrase = getpass('Enter passphrase: ')
+    passphrase = getpass(f'[optional] Enter passphrase for user {user}: ')
 
     crypt = aes_encrypter(user=user, session_key=b'', passphrase=passphrase)
     encrypted = crypt.encrypt(data)
